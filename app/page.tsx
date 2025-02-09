@@ -1,101 +1,104 @@
-import Image from "next/image";
+"use client";
+import axios from "axios";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [username, setUsername] = useState("");
+  const [userData, setUserData] = useState(null);
+  const [error, setError] = useState(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+  const handleInputChange = (event) => {
+    setUsername(event.target.value);
+  };
+
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.github.com/users/${username}`
+      );
+      const user = response.data;
+
+      // Fetch commit data (This is a simplified example.  Rate limits apply!)
+      const commitResponse = await axios.get(
+        `https://api.github.com/users/${username}/events/public`
+      );
+      const events = commitResponse.data;
+
+      // Calculate total commits (very basic)
+      const totalCommits = events.filter(
+        (event) => event.type === "PushEvent"
+      ).length;
+
+      // Calculate commits in the past year (very basic)
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+      const recentCommits = events.filter(
+        (event) =>
+          event.type === "PushEvent" && new Date(event.created_at) > oneYearAgo
+      ).length;
+
+      setUserData({
+        ...user,
+        totalCommits,
+        recentCommits,
+      });
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setUserData(null);
+      setError("User not found or API error.");
+    }
+  };
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1>GitHub User Card</h1>
+      <input
+        type="text"
+        placeholder="Enter GitHub username"
+        value={username}
+        onChange={handleInputChange}
+        style={{ padding: "8px", marginRight: "10px" }}
+      />
+      <button
+        onClick={fetchData}
+        style={{
+          padding: "8px 16px",
+          backgroundColor: "#4CAF50",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        Fetch Data
+      </button>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {userData && (
+        <div
+          style={{
+            marginTop: "20px",
+            border: "1px solid #ccc",
+            padding: "20px",
+            borderRadius: "8px",
+            maxWidth: "400px",
+          }}
+        >
+          <img
+            src={userData.avatar_url}
+            alt="User Avatar"
+            style={{ width: "100px", borderRadius: "50%" }}
+          />
+          <h2>{userData.name || userData.login}</h2>
+          <p>Total Commits: {userData.totalCommits}</p>
+          <p>Commits in Past Year: {userData.recentCommits}</p>
+          <a href={userData.html_url} target="_blank" rel="noopener noreferrer">
+            View Profile
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
     </div>
   );
 }
